@@ -1,0 +1,15 @@
+{
+  "name": "dsb-debugger",
+  "version": "1.0.0",
+  "description": "an easy to use debugging tool",
+  "main": "index.js",  
+  "author": "Casey Dwayne",
+  "license": "None",
+  "private": true,
+  "dependencies": {
+    "chalk": "^1.1.3",
+    "dsb-utils": "^1.0.0",
+    "dsb-fancy-chalk": "^1.0.0",
+    "dsb-magic-string": "^1.0.0"
+  }  
+}
