@@ -1,9 +1,11 @@
 (function(){
 
+  var utils = require('dsb-utils');
+
   var tests = function(){
     
     /*
-     * reference {this}     
+     * private tests object
      */
     
     var t = this;
@@ -38,6 +40,22 @@
         flag: flag
       };
     },
+    
+    t.run = function(what){
+      var t = ( what instanceof Array );
+      if(t) utils.each( what, function(t){
+        //console.log(t);
+      });
+      /*
+      console.log(t);
+      switch(t){
+        case 'object': break;
+        case 'string': break;
+        case 'array': console.log('testing'); break;            
+        default: break;
+      };//end switch   
+      */
+    };
 
 
     /* @property tests

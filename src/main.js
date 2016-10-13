@@ -1,11 +1,6 @@
 module.exports = (function(){
   
   var utils = require('dsb-utils');
-      utils.magic = require('dsb-magic-string');
-      utils.fc = require('dsb-fancy-chalk');
-      utils.store = require('./store');
-      utils.chalk = require('chalk');
-      var chalk = utils.chalk;
   
   /* @class Debugger
    * the debugger offers easy testing for JS software applications
@@ -58,12 +53,21 @@ module.exports = (function(){
   
     d.settings = options ? utils.merge( d.defaults, options ) : d.defaults, //fix with merge
 
-    
+
     /*
-     * @property messages
+     * @property verdict
+     * we'll set it to true if all tests pass
      */
     
-    d.messages = {
+    d.verdict = false;
+    
+    
+    /*
+     * @property flags
+     * the text and appropriate chalks for each flag
+     */
+    
+    d.flags = {
       pass: {
         text: 'Test Passed!',
         chalks: 'green'
@@ -77,6 +81,7 @@ module.exports = (function(){
         chalks: 'yellow'
       }
     };
+    
     
     /* 
      * @property presets
@@ -101,9 +106,7 @@ module.exports = (function(){
       var a = utils.toArray(arguments),
           f = a.shift();
       if( typeof f === 'string' ) f = trim(f);
-      a = [f].concat(a);
-//      console.log( f.replace(/^[\n|\r] +?| +?[\n|\r]$/g, '') );
-      utils.each(a,utils.fc);
+      a = [f].concat(a);      
       utils.log.apply( null, a );
     },
       
@@ -156,20 +159,19 @@ module.exports = (function(){
   
     d.format = function(test){
       var l = '\n\r';
-      var f = test.flag;
-      var _ = utils.magic;
-      var m = d.messages[f]; //prints a string for log
-      var n = _( chalk.bold( m.text ) ).break().print();
-      var o = _( chalk[m.chalks]( n ) );
+      var f = test.flag;      
+      var m = d.flags[f]; //prints a string for log
+      var n = m.text;
+      var o = ' ';
       if( f !== 'pass' || d.settings.expandAll ){
         utils.each( test, function(v,k){
-          o =  _( o ).title( k, v ).break();
+          o +=  k + ': ' + v;
         });
       }
       else {
-        o = _( o ).prepend( _( test.name ).break().print() );
+        o += test.name;
       }
-      return o.print();
+      return n+o;
     },
     
     /*
@@ -266,15 +268,46 @@ module.exports = (function(){
           }
         }
       }
-      var name = utils.magic(name);
       if(d.settings.delay){
         var fn = func.bind( func, method, test, name, utils);
         return d.tests.delayed[name] = fn;
       }
       return func.call( func, method, test, name, parent);
     };
-       
+         
+    /*
+     * @method run
+     * @param {type} what
+     * @returns {undefined}
+     */  
+    d.run = function(what){      
+      if( what instanceof Array ){
+        utils.each( what, function(params, context){        
+          d.test.apply( null, params );
+        });
+      }
+    };
+
+    /*
+     * @method complete
+     *      
+     */
     
+    d.complete = function(){
+      d.log('\n\r');
+      var i = 1,
+          r = d.tests.registered;
+          t = d.tests.tests,
+          p = t.successful,
+          f = t.failed;
+      utils.each( p, function(){ i = i+1; });
+      d.log('Successfully ran '+i+' of '+r+' tests!');
+      if( i !== r ){
+        d.log( 'Failed tests:'+Object.keys(f) );
+      }
+      d.log('\n\r');
+    };
+      
    /* 
     * look for/reference UI items   
     */
@@ -292,7 +325,7 @@ module.exports = (function(){
      */
     
     d.start = function(){
-      var s = utils.magic('%bold:').break().append('Starting Debugger').note(d.name).break().print();
+      var s = 'Starting debug-lite [ '+d.name+' ]\n\r';
       d.log( s );
     };
     
@@ -307,36 +340,59 @@ module.exports = (function(){
     return d;
     
   };
+
+  /*
+   * @TODO move to another place...
+   * @method stringArgs
+   * converts argument(s) to a formatted string ( my, args )
+   * @param args {Any} expects array for multiple args or wrapped single array
+   * @returns formated_string {String} the pretty string
+   */
+  var stringArgs = function(a){
+    var s = '( ';    
+    if( utils.is( a, 'array' ) ) s += a.join(',');
+    else s += a;
+    s += ' )';
+    return s;
+  };
     
   /*
-   * create a debugger
-   */
-    
-  Debugger.create = function(n,o){ return new Debugger(n,o); };
-  
-  Debugger.utils = utils;
-  
-  /***
-  
-  var debug = new Debugger('test',{classic:true}); 
-  
-    //debug.test('abc', utils.defined( true ),true)    
-    /**
-    debug.method( 'defined', function(fn,test){
-      var a = 'defined!';
-      test( 'normal', fn(a), true);
-    }, utils);
-    
-    debug.method('each', function(e,t){
-      var o = { 'test': 'object', 'test2': 'object2' };
-      e(o, function(v,k,i){
-        //alert(k);
+   * @TODO incorporate 'this' method?
+   * @method create
+   * creates a debug-lite object (method)
+   * if args and expects defined, automatically runs test and returns test object
+   * else, returns a method with {source} and {name} bound
+   * @param name {String} debugger name
+   * @param source {Any} the source (in Node, the main module)
+   * @param args {Any} if args, applied. else, passed. use wrapper array for single array param [ [] ]
+   * @param expects {Any} what is the expected result from the test
+   * @returns test {Debugger.test object}
+   */  
+ 
+  var _temp;
+  var debug = function(n,s,a,e,c){    
+    var d = _temp ? _temp : _temp = new Debugger(n);
+    var m = d.method.bind( s, n );
+    if( a && e ){
+      var s = ' => '+e;
+      var p = stringArgs(a);
+      var ps = p + s;
+      var r = m(function(fn, test, name){        
+        test( name+ps, fn(a), e );
+        if( c ) test( name+'.call'+ps, fn(a), e );
       });
-    }, utils);
-      
- /***/
-      
-  //SYSTEM.Debugger = Debugger;
-  return module.exports = Debugger;
+      //return r;
+    }
+    //else return m;    
+    return d;
+  };
   
+
+  //debug( 'name', Debugger, 'arguments', 'expected' );
+  
+  /**/
+  Debugger.utils = utils;
+
+  return module.exports = debug;
+  /**/
 }());
