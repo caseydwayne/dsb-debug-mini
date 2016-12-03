@@ -8,7 +8,7 @@ module.exports = (function(DEBUG){
     //var compare = require('dsb-compare');
     
   var chalk = require('chalk');
-  var toArray = require('dsb-to-array');
+  //var toArray = require('dsb-to-array');
   var type = require('dsb-typecheck');
   
 /***********************************************************************/
@@ -35,11 +35,10 @@ module.exports = (function(DEBUG){
     pass: 0,
     all: 0,    
     reporter: console.log,
-    test: function( n, r, e ){
-      var a = toArray( arguments );
-      if( DEBUG > 2 ) console.log( ns, 'received', a );
-      debug.all++;
-      if( a.length < 3 ) e = true;
+    test: function( n, r, e ){      
+      if( DEBUG > 2 ) console.log( ns, 'received', arguments );
+      debug.all++;      
+      if( type( e, 'undefined' ) ) e = true;
       //var x = compare( r, e );
       var x = ( r === e );
       if( DEBUG ) console.log('Test Results:\n',{
@@ -121,4 +120,4 @@ module.exports = (function(DEBUG){
   return debug;
 
 /*---------------------------------------------------------------------*/  
-}(3));
+}(0));
