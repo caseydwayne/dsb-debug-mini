@@ -1,44 +1,31 @@
-(function(){
+module.exports = (function(){
+/*---------------------------------------------------------------------*/  
   
-  /*
-   * debug-lite test
-   */
+  var debug = require('./index');
+
+/*---------------------------------------------------------------------*/
+
+  var n = 'test',
+      t = true;
   
-  var debug = require('./index'),
-          o = {}, //storage object
-         n1 = 'object property method',
-         n2 = 'second property method',         
-          p = 'ma',
-          x = 'gic',
-          b = ' bullet',
-         e1 = 'magic',
-         e2 = 'magic'+b, //"magic bullet"
-         //a generic function to access directly
-         fn = function(s){
-           var s = s || this;
-           return s+x;
-         };
-         
-  //fill a source object to pass to debug-lite
-  o[n1] = fn;
-  o[n2] = function(){
-    var z = o[n1](p);
-    return z + b;
-  };
+/***********************************************************************/
+      
+  debug.test( n, t, t );
+
+  n += ' with boolean arg and undefined expect';
+  debug.test( n, t );
   
-  //quick test a generic name, function, param(s), expects
-  debug( 'method quick test', fn, p, e1, true );
+/*---------------------------------------------------------------------*/
   
-  //access source object under object[name1]
-  debug( n1, o, p, e1, true );
+  var x = 'method',
+      y = function(fn, test, name){ test( 'inner '+name, fn(), x ); },
+      z = function(){ return x; };
+      
+  debug.method( x, y, z );
   
-  //access source object under object[name2]
-  debug( n2, o, p, e2, true );
+/***********************************************************************/  
   
-  //complete debug manually
-  var result = debug.complete();
+  return debug.complete();
   
-  //return the result object provided by complete
-  return result;
-       
+/*---------------------------------------------------------------------*/
 }());

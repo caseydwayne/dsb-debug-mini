@@ -1,79 +1,124 @@
-(function(){
+module.exports = (function(DEBUG){
+/*---------------------------------------------------------------------*/
 
-  var d = require('dsb-debug-core');
+  var ns = 'debug-mini';
+ 
+  //these 2 are part of a larger software
+    //var chalk = require('dsb-chalk');
+    //var compare = require('dsb-compare');
+    
+  var chalk = require('chalk');
+  var toArray = require('dsb-to-array');
+  var type = require('dsb-typecheck');
+  
+/***********************************************************************/
 
   /*
-   * @TODO move to another place...
-   * @method stringArgs
-   * converts argument(s) to a formatted string ( my, args )
-   * @param args {Any} expects array for multiple args or wrapped single array
-   * @returns formated_string {String} the pretty string
-   */
-  
-  var stringArgs = function(a){
-    var s = '( ';    
-    if( a instanceof Array ) s += a.join(',');
-    else s += a;
-    s += ' )';
-    return s;
-  };
-  
-  /*
+   * @module debug-mini
    * 
-   * @type type
+   * creates a miniture debugger, independent of dsb-debug, that
+   * can be used in situations where dsb-debug would cause conflict
+   * (mainly modules required by dsb-debug, preventing cyclical deps).
+   * 
+   * it mimics the core functionality of dsb-debug so it can still be 
+   * used in dsb-diag diagnostic tests.
+   * 
+   * it is also used by open-source modules because dsb-debug 
+   * is still closed source.
    */
 
-  d.and = function(){
-    console.log('AND!');
-  };
+/*---------------------------------------------------------------------*/
 
-  /*
-   * @TODO incorporate 'this' method?
-   * @method create
-   * creates a debug-lite object (method)
-   * if args and expects defined, automatically runs test and returns test object
-   * else, returns a method with {source} and {name} bound
-   * @param name {String} debugger name
-   * @param source {Any} the source (in Node, the main module)
-   * @param [args] {Any} if args, applied. else, passed. use wrapper array for single array param [ [] ]
-   * @param [expects] {Any} what is the expected result from the test
-   * @param [call] {Boolean} if true, test will also attempt to run via .call()
-   * @returns test {Debugger.test object}
-   */
-
-  var _temp; //@todo attach to system and create a cache
-  
-  var debug = function( n, s, a, e, c ){    
-    //create a debugger if one isn't active
-    var _d = _temp ? _temp : _temp = d.create(n);
-    //bind source object and name to method
-    var m = _d.method.bind( s, n );
-    //if args and exepect
-    if( a && e ){
-      //params
-      var p = stringArgs(a),
-        //returns
-        s = ' => '+e,
-        //printed string
-        ps = p + s;
-      //result
-      var r = m(function(fn, test, name){        
-        test( name+ps, fn(a), e );
-        //if call === true
-        if( c ) test( name+'.call'+ps, fn(a), e );
+  var debug = {
+    verdict: false,
+    fail: [],
+    pass: 0,
+    all: 0,    
+    reporter: console.log,
+    test: function( n, r, e ){
+      var a = toArray( arguments );
+      if( DEBUG > 2 ) console.log( ns, 'received', a );
+      debug.all++;
+      if( a.length < 3 ) e = true;
+      //var x = compare( r, e );
+      var x = ( r === e );
+      if( DEBUG ) console.log('Test Results:\n',{
+        name: n, result: r, expect: e, passed: x
       });
-      //return r;
+      if( x ) this.pass++;
+      else debug.fail.push( n );
+      var v = '['+(x ? 'pass' : 'fail')+']';
+      var c = (x?'green':'red');
+      v = chalk.bold[c]( v );
+      this.reporter( '\n', v, n, '\n' );
+    },
+    method: function( name, fn, src ){
+      var mn = 'debug.method';
+      if( DEBUG ) console.log( mn, 'received', arguments );      
+      var DMR = function(x, i){
+        return mn+' requires '+x+' as '+i+' parameter';
+      };
+      var SRC = 'a source method (or object with name as matching key to a method)';
+      
+      if( !type( name, 'string' ) )
+          throw new Error( DMR( 'a name', '1st' ) );
+
+      if( !type( fn, 'function' ) )
+        throw new Error( DMR( 'a test_callback', '2nd' ) );
+
+      var sfn = type( fn, 'function' );
+
+      if( !sfn && !type( src, 'object' ) )
+        throw new Error( DMR( SRC, '3nd' ) );        
+
+      var _fn;
+      if( sfn ) _fn = src;
+      else {
+        if( type( src[name], 'function' ) ) _fn = src[name];
+        else throw new Error( DMR( SRC, '3nd' ) );        
+      } 
+      
+      var self = debug;
+      var _test = function( n, a, e ){
+        var r,
+           ns = type( n, 'string' ),
+           aa = type( a, 'array' ),
+           ib = type( a, 'boolean' );
+        if( !ns ){ e = a; a = n; n = name; }        
+        if( ib ){
+          r = a;
+          return self.test( n, r, e );        
+        }
+        if( !aa ) a = [a];
+        if( ns ) n += '('+a.join(', ')+')';
+        var r = _fn.apply( null, a );
+        return self.test( n, r, e );        
+      };
+      
+      return fn( _fn, _test, name );
+      
+    },
+    question: function(q,a){ 
+      console.log( q, ( a ? 'yes' : 'no' ) );
+    },
+    complete: function(){
+      var p = this.verdict = ( this.pass === this.all );
+      var b = '\n - ';
+      this.reporter( 
+        p ? 'ALL TESTS PASSED' 
+          : 'something failed...'+b+(this.fail).join(b)
+      );
+    },
+    name: 'generic debug-mini',
+    create: function(name){
+      if( typeof name === 'string' ) this.name = name;
+      return this;
     }
-    //else return m;
-    _d.and = _d.test.and = d.test;
-      //function(){};
-    
-    return _d;
   };
-    
+ 
+/*---------------------------------------------------------------------*/
 
+  return debug;
 
-  //debugger
-  return module.exports = debug;
-  
-}());
+/*---------------------------------------------------------------------*/  
+}(3));
