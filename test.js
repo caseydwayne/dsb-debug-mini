@@ -18,10 +18,13 @@ module.exports = (function(){
 /*---------------------------------------------------------------------*/
   
   var x = 'method',
-      y = function(fn, test, name){ test( 'inner '+name, fn(), x ); },
+      //method as 2nd param with method's ( fn, test, name ) accepter
+      y = function( fn, test, name ){ test( 'inner '+name, fn(), x ); },
+      //the method to pass into y() as fn
       z = function(){ return x; };
       
-  debug.method( x, y, z );
+  // z should return x, processed through method test y()
+  debug.method( x, y, z );    
   
 /***********************************************************************/  
   
