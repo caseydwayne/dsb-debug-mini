@@ -47,6 +47,11 @@ module.exports = (function(DEBUG){
 
 /*----------------------------------------------------------------------------*/
 
+    /*
+     * @method test
+     * accepts the standard name, results, expects. adds to totals and reports findings
+     */
+
     test: function( n, r, e ){
       if( DEBUG > 2 ) console.log( ns, 'received', arguments );
       if( type( r, 'object' ) )
@@ -63,15 +68,25 @@ module.exports = (function(DEBUG){
       if( DEBUG ) console.log('Test Results:\n',{
         name: n, result: r, expect: e, passed: x
       });
+      var failed;
       if( x ) debug.pass++;
-      else debug.fail.push( n );
+      else {
+        failed = true;
+        debug.fail.push( n );
+      }
       var v = '['+(x ? 'pass' : 'fail')+']';
-      var c = (x?'green':'red');
+      var c = ( x ? 'green' : 'red' );
       v = chalk.bold[c]( v );
-      debug.reporter( '\n', v, n, '\n' );
+      var fs = chalk['gray']( '-- Result was '+r+', expected '+e );
+      debug.reporter( '\n', v, n, failed ? fs : '', '\n' );
     },
 
 /*----------------------------------------------------------------------------*/
+
+    /*
+     * @method method
+     * accepts a name, function, and, when fn param is object, src can be a method in that object.
+     */
 
     method: function( name, fn, src ){
 
@@ -115,8 +130,9 @@ module.exports = (function(DEBUG){
           r = a;
           return self.test( n, r, e );
         }
+
         if( !aa ) a = [a];
-        if( ns ) n += '('+a.join(', ')+')';
+        if( ns ) n += '( '+a.join(', ')+' )';
         var r = _fn.apply( null, a );
         return self.test( n, r, e );
       };

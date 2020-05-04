@@ -1,0 +1,13 @@
+dsb-debug-mini change log
+
+[ 07/11/2016 ]
+
+1.0 created
+
+[ 02/20/2017 ]
+
+1.01 updated test file
+
+[ 11/13/2019 ]
+
+1.02 added bin, integrated node_modules.

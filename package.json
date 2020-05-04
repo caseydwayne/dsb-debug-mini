@@ -1,13 +1,13 @@
 {
   "name": "dsb-debug-mini",
-  "version": "0.0.6",
+  "version": "1.0.2",
   "description": "an easy to use debugging tool",
   "main": "index.js",
   "author": "Casey Dwayne <opensource@caseydwayne.com> (https://caseydwayne.com)",
   "dependencies": {
     "chalk": "^1.1.3",
     "dsb-to-array": "1.0.0",
-    "dsb-typecheck": "^1.0.0"
+    "dsb-typecheck": "^1.3.0"
   },
   "license": "NONE",
   "private": true
